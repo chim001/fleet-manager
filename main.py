@@ -1176,7 +1176,9 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                 col_r, col_p, col_d = st.columns([2,3,2])
                 is_self = u_row["username"] == st.session_state.user
 
-                new_role = col_r.selectbox("Role:", ["General","Admin"], index=["General","Admin"].index(u_row["role"]), key=f"role_sel_{u_row['username']}", disabled=is_self or u_row['is_active'] == 0)
+                role_options = ["General","Admin"]
+                current_role = u_row["role"] if u_row["role"] in role_options else "General"
+                new_role = col_r.selectbox("Role:", role_options, index=role_options.index(current_role), key=f"role_sel_{u_row['username']}", disabled=is_self or u_row['is_active'] == 0)
                 if new_role != u_row["role"]:
                     write_conn = get_db_connection()
                     cursor = write_conn.cursor()
