@@ -453,7 +453,7 @@ if st.session_state.role == "Admin":
     navigation_routes.append("🚘 Fleet Registry")
     navigation_routes.append("🛡️ Admin Panel")
 
-menu = st.sidebar.radio("Navigate:", navigation_routes)
+menu = st.sidebar.radio("Navigate:", navigation_routes, key="main_nav")
 
 st.sidebar.markdown("---")
 st.sidebar.caption("v1.4.2 • Developed by chiMs")
