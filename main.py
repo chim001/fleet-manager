@@ -849,6 +849,9 @@ if menu == "📊 Reports":
     else:
         st.info("No records match the current filters.")
 
+    conn.close()
+    st.stop()
+
 
 # =============================================================================
 # SECTION 2: NEW RENTAL
@@ -945,6 +948,9 @@ elif menu == "📝 New Rental":
                             st.rerun()
                         except Exception as e:
                             st.error(f"Database error: {e}")
+
+    conn.close()
+    st.stop()
 
 
 # =============================================================================
@@ -1092,6 +1098,9 @@ elif menu == "🔧 Maintenance":
                     st.warning(f"Entry #{del_id} deleted.")
                     st.rerun()
 
+    conn.close()
+    st.stop()
+
 
 # =============================================================================
 # SECTION 4: FLEET REGISTRY
@@ -1132,6 +1141,9 @@ elif menu == "🚘 Fleet Registry" and st.session_state.role == "Admin":
     st.subheader("📋 Core Infrastructure Asset Register")
     df_veh = pd.read_sql_query('SELECT reg_number AS "Asset Code", vehicle_type AS "Classification Type", model AS "Model Details", color AS "Color Scheme", status AS "Operational Yard Status" FROM vehicles', conn)
     st.dataframe(df_veh, use_container_width=True)
+
+    conn.close()
+    st.stop()
 
 
 # =============================================================================
@@ -1233,4 +1245,5 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
         df_audit = pd.read_sql_query("SELECT * FROM audit_log ORDER BY id DESC", conn)
         st.dataframe(df_audit, use_container_width=True)
 
-conn.close()
+    conn.close()
+    st.stop()
