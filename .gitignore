@@ -1,0 +1,6 @@
+*.db
+.env
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
+reset_password.py
