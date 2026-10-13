@@ -459,13 +459,11 @@ st.sidebar.markdown("---")
 st.sidebar.caption("v1.4.2 • Developed by chiMs")
 st.sidebar.caption("© 2026 Fleet Manager Enterprise")
 
-conn = get_db_connection()
-
-
 # =============================================================================
 # SECTION 1: REPORTS DASHBOARD
 # =============================================================================
 if menu == "📊 Reports":
+    conn = get_db_connection()
     st.title("📊 Fleet Control Room & Reporting Engine")
 
     df_vehicles_raw  = pd.read_sql_query("SELECT reg_number, model, vehicle_type FROM vehicles", conn)
@@ -856,6 +854,7 @@ if menu == "📊 Reports":
 # SECTION 2: NEW RENTAL
 # =============================================================================
 elif menu == "📝 New Rental":
+    conn = get_db_connection()
     st.title("📝 New Walk-In Booking Desk")
 
     is_admin_nr = st.session_state.role == "Admin"
@@ -952,6 +951,7 @@ elif menu == "📝 New Rental":
 # SECTION 3: MAINTENANCE LOGGING
 # =============================================================================
 elif menu == "🔧 Maintenance":
+    conn = get_db_connection()
     st.title("🔧 Costs & Maintenance")
 
     is_admin_maint = st.session_state.role == "Admin"
@@ -1097,6 +1097,7 @@ elif menu == "🔧 Maintenance":
 # SECTION 4: FLEET REGISTRY
 # =============================================================================
 elif menu == "🚘 Fleet Registry" and st.session_state.role == "Admin":
+    conn = get_db_connection()
     st.title("🚘 Fleet Asset Registry")
     st.subheader("Register Fleet Asset or Machinery Equipment")
 
@@ -1137,6 +1138,7 @@ elif menu == "🚘 Fleet Registry" and st.session_state.role == "Admin":
 # SECTION 5: ADMIN PANEL
 # =============================================================================
 elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
+    conn = get_db_connection()
     st.title("🛡️ Admin Configuration Dashboard")
     tab_roles, tab_audit = st.tabs(["👥 User Security Directory", "📜 System Security Audit Log"])
 
@@ -1168,7 +1170,7 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
 
         st.markdown("---")
         st.subheader("All Users")
-        df_users = pd.read_sql_query("SELECT username, role, is_active FROM users", conn)
+        df_users = pd.read_sql_query("SELECT username, role, is_active FROM users WHERE username IS NOT NULL AND username != ''", conn)
 
         for _, u_row in df_users.iterrows():
             badge = "🟢 Active" if u_row['is_active'] == 1 else "🔴 Deactivated"
