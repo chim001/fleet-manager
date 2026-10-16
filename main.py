@@ -716,7 +716,7 @@ if menu == "📊 Reports":
             fleet_profit_net = df_asset_report["Profit (MWK)"].sum() - fleet_admin_cost
             fleet_row = {"Vehicle": "FLEET TOTAL", "Model": f"{len(df_asset_report)} vehicle(s)", "Gross Revenue (MWK)": df_asset_report["Gross Revenue (MWK)"].sum(), "Total Collected (MWK)": df_asset_report["Total Collected (MWK)"].sum(), "Outstanding (MWK)": df_asset_report["Outstanding (MWK)"].sum(), "Maintenance Costs (MWK)": df_asset_report["Maintenance Costs (MWK)"].sum(), "Profit (MWK)": fleet_profit_net, "Status": f"🔴 {n_overdue} overdue | 🟡 {n_due_today} today | 🟢 {n_due_future} future", "Due Date": "(see vehicle rows)"}
             df_asset_report_display = pd.concat([df_asset_report, pd.DataFrame([fleet_row])], ignore_index=True)
-            st.dataframe(df_asset_report_display, use_container_width=True, column_config={"Gross Revenue (MWK)": st.column_config.NumberColumn(format="%d"), "Total Collected (MWK)": st.column_config.NumberColumn(format="%d"), "Outstanding (MWK)": st.column_config.NumberColumn(format="%d"), "Maintenance Costs (MWK)": st.column_config.NumberColumn(format="%d"), "Profit (MWK)": st.column_config.NumberColumn(format="%d")})
+            st.dataframe(df_asset_report_display, use_container_width=True, hide_index=True, column_config={"Gross Revenue (MWK)": st.column_config.NumberColumn(format="%d"), "Total Collected (MWK)": st.column_config.NumberColumn(format="%d"), "Outstanding (MWK)": st.column_config.NumberColumn(format="%d"), "Maintenance Costs (MWK)": st.column_config.NumberColumn(format="%d"), "Profit (MWK)": st.column_config.NumberColumn(format="%d")})
             rep_col1, rep_col2 = st.columns(2)
             rep_col1.download_button(label="📥 Download Report as CSV", data=convert_df_to_csv(df_asset_report_display), file_name=f"asset_fleet_performance_{file_stub}.csv", mime="text/csv", key="dl_btn_asset_report_csv")
             rep_col2.download_button(label="📥 Download Report as PDF", data=generate_asset_fleet_pdf(df_asset_report_display, time_scope), file_name=f"asset_fleet_performance_{file_stub}.pdf", mime="application/pdf", key="dl_btn_asset_report_pdf")
@@ -794,7 +794,7 @@ if menu == "📊 Reports":
             st.markdown("---")
             st.subheader("🏢 Admin Cost Breakdown")
             admin_by_cat = df_admin_filtered.groupby("category")["cost"].sum().reset_index().rename(columns={"category":"Category","cost":"Total (MWK)"}).sort_values("Total (MWK)", ascending=False)
-            st.dataframe(admin_by_cat, use_container_width=True, column_config={"Total (MWK)": st.column_config.NumberColumn(format="%d MWK")})
+            st.dataframe(admin_by_cat, use_container_width=True, hide_index=True, column_config={"Total (MWK)": st.column_config.NumberColumn(format="%d MWK")})
 
     if is_admin:
         with tab_profitability:
@@ -820,7 +820,7 @@ if menu == "📊 Reports":
                     profit_data_rows.append({"Asset Code/Plate": plate, "Type": v_row['vehicle_type'], "Model / Description": v_row['model'], "Total Revenue Collected (MWK)": unit_revenue, "Maintenance Overhead (MWK)": unit_expenses, "Net Performance Margin (MWK)": unit_revenue - unit_expenses})
                 if profit_data_rows:
                     df_pnl = pd.DataFrame(profit_data_rows)
-                    st.dataframe(df_pnl.sort_values(by="Net Performance Margin (MWK)", ascending=False), use_container_width=True, column_config={"Total Revenue Collected (MWK)": st.column_config.NumberColumn(format="%d MWK"), "Maintenance Overhead (MWK)": st.column_config.NumberColumn(format="%d MWK"), "Net Performance Margin (MWK)": st.column_config.NumberColumn(format="%d MWK")})
+                    st.dataframe(df_pnl.sort_values(by="Net Performance Margin (MWK)", ascending=False), use_container_width=True, hide_index=True, column_config={"Total Revenue Collected (MWK)": st.column_config.NumberColumn(format="%d MWK"), "Maintenance Overhead (MWK)": st.column_config.NumberColumn(format="%d MWK"), "Net Performance Margin (MWK)": st.column_config.NumberColumn(format="%d MWK")})
                 else:
                     st.caption("No financial data within these parameters.")
 
@@ -1129,7 +1129,7 @@ elif menu == "🔧 Maintenance":
                 st.metric("Total Admin Costs on Record", f"{df_admin_exp['cost'].sum():,.0f} MWK")
                 df_admin_display = df_admin_exp.copy()
                 df_admin_display["date"] = df_admin_display["date"].apply(fmt_date)
-                st.dataframe(df_admin_display.rename(columns={"id":"ID","date":"Date","category":"Category","description":"Description","cost":"Cost (MWK)","logged_by":"Logged By"}), use_container_width=True, column_config={"Cost (MWK)": st.column_config.NumberColumn(format="%d MWK")})
+                st.dataframe(df_admin_display.rename(columns={"id":"ID","date":"Date","category":"Category","description":"Description","cost":"Cost (MWK)","logged_by":"Logged By"}), use_container_width=True, hide_index=True, column_config={"Cost (MWK)": st.column_config.NumberColumn(format="%d MWK")})
 
                 st.markdown("---")
                 st.subheader("🗑️ Delete Admin Cost Entry")
@@ -1367,7 +1367,7 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
         )
         _ac.close()
         st.caption(f"Showing {len(df_audit)} log entries")
-        st.dataframe(df_audit, use_container_width=True)
+        st.dataframe(df_audit, use_container_width=True, hide_index=True)
 
     conn.close()
     st.stop()
