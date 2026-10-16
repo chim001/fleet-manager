@@ -433,6 +433,10 @@ if "user" not in st.session_state:
     st.session_state.user = None
 if "role" not in st.session_state:
     st.session_state.role = None
+if "last_activity" not in st.session_state:
+    st.session_state.last_activity = datetime.now()
+
+SESSION_TIMEOUT_MINUTES = 15
 
 def verify_login(username: str, password: str) -> str:
     conn = get_db_connection()
@@ -447,6 +451,7 @@ def verify_login(username: str, password: str) -> str:
             st.session_state.authenticated = True
             st.session_state.user = username
             st.session_state.role = row["role"]
+            st.session_state.last_activity = datetime.now()
             log_action(username, "Logged in.")
             return "SUCCESS"
     return "FAILED"
@@ -457,6 +462,20 @@ def trigger_logout():
     st.session_state.user = None
     st.session_state.role = None
     st.rerun()
+
+# --- Session timeout check ---
+if st.session_state.authenticated:
+    idle_minutes = (datetime.now() - st.session_state.last_activity).total_seconds() / 60
+    if idle_minutes > SESSION_TIMEOUT_MINUTES:
+        log_action(st.session_state.user, "Session expired — auto logged out.")
+        st.session_state.authenticated = False
+        st.session_state.user = None
+        st.session_state.role = None
+        st.session_state.last_activity = datetime.now()
+        st.warning("⏱️ Your session expired after 15 minutes of inactivity. Please sign in again.")
+        st.rerun()
+    else:
+        st.session_state.last_activity = datetime.now()
 
 if not st.session_state.authenticated:
     st.title("🔐 Fleet Manager")
