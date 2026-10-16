@@ -1189,7 +1189,7 @@ elif menu == "🚘 Fleet Registry" and st.session_state.role == "Admin":
     _pc5 = psycopg2.connect(DATABASE_URL)
     df_veh = pd.read_sql_query('SELECT reg_number AS "Asset Code", vehicle_type AS "Classification Type", model AS "Model Details", color AS "Color Scheme", status AS "Operational Yard Status" FROM vehicles', _pc5)
     _pc5.close()
-    st.dataframe(df_veh, use_container_width=True)
+    st.dataframe(df_veh, use_container_width=True, hide_index=True)
 
     st.markdown("---")
     st.subheader("🗑️ Remove Fleet Asset")
