@@ -1215,7 +1215,11 @@ elif menu == "🚘 Fleet Registry" and st.session_state.role == "Admin":
             st.warning("⚠️ This asset is currently on an active rental. Return the vehicle before removing it.")
         else:
             st.caption("This will permanently delete the asset and all its associated maintenance records.")
-            if st.button("🗑️ Confirm Remove Asset", type="secondary", key="btn_del_vehicle"):
+            confirmed = st.checkbox(
+                f"Yes, I want to permanently remove **{del_plate}** from the fleet registry.",
+                key="chk_del_confirm"
+            )
+            if st.button("🗑️ Confirm Remove Asset", type="secondary", key="btn_del_vehicle", disabled=not confirmed):
                 try:
                     _dc = get_db_connection()
                     _dcur = _dc.cursor()
