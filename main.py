@@ -1271,10 +1271,29 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
 
     with tab_audit:
         st.subheader("System Access Log Ledgers")
-        df_audit = pd.read_sql_query(
-            "SELECT * FROM audit_log WHERE username <> 'username' AND action <> 'action' AND (timestamp IS NULL OR timestamp <> 'timestamp') ORDER BY id DESC",
-            conn
-        )
+
+        # One-click purge button for ghost rows (runs a direct DELETE on a fresh connection)
+        if st.button("🧹 Purge Ghost Rows", key="btn_purge_ghost"):
+            _pc = get_db_connection()
+            _pcur = _pc.cursor()
+            _pcur.execute("DELETE FROM audit_log WHERE username = 'username' OR action = 'action' OR timestamp = 'timestamp' OR username IS NULL OR action IS NULL")
+            deleted = _pcur.rowcount
+            _pc.commit()
+            _pc.close()
+            st.success(f"Purged {deleted} ghost row(s). Reloading…")
+            st.rerun()
+
+        # Load all rows then filter ghost entries in Python (immune to SQL transaction isolation)
+        df_audit_raw = pd.read_sql_query("SELECT * FROM audit_log ORDER BY id DESC", conn)
+        df_audit = df_audit_raw[
+            df_audit_raw['username'].notna() &
+            (df_audit_raw['username'].str.strip() != 'username') &
+            (df_audit_raw['username'].str.strip() != '') &
+            df_audit_raw['action'].notna() &
+            (df_audit_raw['action'].str.strip() != 'action') &
+            (df_audit_raw['action'].str.strip() != '')
+        ].reset_index(drop=True)
+        st.caption(f"Showing {len(df_audit)} real entries (filtered {len(df_audit_raw) - len(df_audit)} ghost rows)")
         st.dataframe(df_audit, use_container_width=True)
 
     conn.close()
