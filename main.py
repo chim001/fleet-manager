@@ -154,6 +154,23 @@ def init_db():
             if cursor.fetchone() is None:
                 cursor.execute(alter_sql)
 
+        # Permanently remove ghost/seed rows that contain literal column-name strings.
+        # This runs on every startup, so Railway restarts cannot re-introduce them.
+        cursor.execute("""
+            DELETE FROM audit_log
+            WHERE username = 'username'
+               OR action = 'action'
+               OR timestamp = 'timestamp'
+               OR (username IS NULL AND action IS NULL)
+        """)
+        cursor.execute("""
+            DELETE FROM users
+            WHERE username = 'username'
+               OR role = 'role'
+               OR username IS NULL
+               OR username = ''
+        """)
+
         cursor.execute("SELECT COUNT(*) FROM users")
         if cursor.fetchone()["count"] == 0:
             admin_pass = os.environ.get("ADMIN_PASSWORD", "admin123")
