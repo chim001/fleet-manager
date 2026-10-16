@@ -1191,6 +1191,43 @@ elif menu == "🚘 Fleet Registry" and st.session_state.role == "Admin":
     _pc5.close()
     st.dataframe(df_veh, use_container_width=True)
 
+    st.markdown("---")
+    st.subheader("🗑️ Remove Fleet Asset")
+    _pc6 = psycopg2.connect(DATABASE_URL)
+    df_del = pd.read_sql_query("SELECT reg_number, model, status FROM vehicles ORDER BY reg_number", _pc6)
+    _pc6.close()
+
+    if df_del.empty:
+        st.info("No assets registered yet.")
+    else:
+        del_labels = {
+            row["reg_number"]: f"{row['reg_number']} — {row['model']} [{row['status']}]"
+            for _, row in df_del.iterrows()
+        }
+        del_plate = st.selectbox(
+            "Select asset to remove:",
+            df_del["reg_number"].tolist(),
+            format_func=lambda x: del_labels[x],
+            key="del_vehicle_select"
+        )
+        sel_status = df_del.loc[df_del["reg_number"] == del_plate, "status"].values[0]
+        if sel_status == "Rented":
+            st.warning("⚠️ This asset is currently on an active rental. Return the vehicle before removing it.")
+        else:
+            st.caption("This will permanently delete the asset and all its associated maintenance records.")
+            if st.button("🗑️ Confirm Remove Asset", type="secondary", key="btn_del_vehicle"):
+                try:
+                    _dc = get_db_connection()
+                    _dcur = _dc.cursor()
+                    _dcur.execute("DELETE FROM vehicles WHERE reg_number = %s", (del_plate,))
+                    _dc.commit()
+                    _dc.close()
+                    log_action(st.session_state.user, f"Removed asset '{del_plate}' from registry.")
+                    st.success(f"Asset [{del_plate}] removed.")
+                    st.rerun()
+                except Exception as _de:
+                    st.error(f"Could not remove asset: {_de}")
+
     conn.close()
     st.stop()
 
