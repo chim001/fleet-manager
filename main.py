@@ -1182,9 +1182,17 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
 
         st.markdown("---")
         st.subheader("All Users")
+
+        # Clean up any ghost/seed rows that have literal 'username' or 'role' as values
+        cleanup_conn = get_db_connection()
+        cleanup_cursor = cleanup_conn.cursor()
+        cleanup_cursor.execute("DELETE FROM users WHERE username = 'username' OR role = 'role'")
+        cleanup_conn.commit()
+        cleanup_conn.close()
+
         df_users = pd.read_sql_query("SELECT username, role, is_active FROM users WHERE username IS NOT NULL AND username != ''", conn)
 
-        for _, u_row in df_users.iterrows():
+        for row_idx, u_row in df_users.iterrows():
             badge = "🟢 Active" if u_row['is_active'] == 1 else "🔴 Deactivated"
             with st.expander(f"👤 {u_row['username']} ({u_row['role']}) — {badge}"):
                 col_r, col_p, col_d = st.columns([2,3,2])
@@ -1192,8 +1200,8 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
 
                 role_options = ["General","Admin"]
                 current_role = u_row["role"] if u_row["role"] in role_options else "General"
-                new_role = col_r.selectbox("Role:", role_options, index=role_options.index(current_role), key=f"role_sel_{u_row['username']}", disabled=is_self or u_row['is_active'] == 0)
-                if col_r.button("💾 Save Role", key=f"btn_role_{u_row['username']}", disabled=is_self or u_row['is_active'] == 0):
+                new_role = col_r.selectbox("Role:", role_options, index=role_options.index(current_role), key=f"role_sel_{row_idx}_{u_row['username']}", disabled=is_self or u_row['is_active'] == 0)
+                if col_r.button("💾 Save Role", key=f"btn_role_{row_idx}_{u_row['username']}", disabled=is_self or u_row['is_active'] == 0):
                     if new_role != u_row["role"]:
                         write_conn = get_db_connection()
                         cursor = write_conn.cursor()
@@ -1206,8 +1214,8 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                     else:
                         st.info("No change — role is already set to that value.")
 
-                new_pass_input = col_p.text_input("New Password (Admin Override):", type="password", key=f"pass_over_{u_row['username']}", disabled=u_row['is_active'] == 0)
-                if col_p.button("🔄 Reset Password", key=f"btn_reset_{u_row['username']}", disabled=u_row['is_active'] == 0):
+                new_pass_input = col_p.text_input("New Password (Admin Override):", type="password", key=f"pass_over_{row_idx}_{u_row['username']}", disabled=u_row['is_active'] == 0)
+                if col_p.button("🔄 Reset Password", key=f"btn_reset_{row_idx}_{u_row['username']}", disabled=u_row['is_active'] == 0):
                     if len(new_pass_input) < 8:
                         st.error("Password must be at least 8 characters.")
                     else:
@@ -1223,7 +1231,7 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
 
                 col_d.markdown("<br>", unsafe_allow_html=True)
                 if u_row['is_active'] == 1:
-                    if col_d.button("🛑 Deactivate", key=f"btn_deact_{u_row['username']}", disabled=is_self):
+                    if col_d.button("🛑 Deactivate", key=f"btn_deact_{row_idx}_{u_row['username']}", disabled=is_self):
                         write_conn = get_db_connection()
                         cursor = write_conn.cursor()
                         cursor.execute("UPDATE users SET is_active = 0 WHERE username = %s", (u_row["username"],))
@@ -1233,7 +1241,7 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                         st.warning(f"Account '{u_row['username']}' deactivated.")
                         st.rerun()
                 else:
-                    if col_d.button("✅ Reactivate", key=f"btn_react_{u_row['username']}"):
+                    if col_d.button("✅ Reactivate", key=f"btn_react_{row_idx}_{u_row['username']}"):
                         write_conn = get_db_connection()
                         cursor = write_conn.cursor()
                         cursor.execute("UPDATE users SET is_active = 1 WHERE username = %s", (u_row["username"],))
