@@ -1309,7 +1309,6 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                 deleted = _pcur.rowcount
                 _pc.commit()
                 _pc.close()
-                st.session_state["main_nav"] = "🛡️ Admin Panel"
                 st.toast(f"✅ Purged {deleted} ghost row(s).", icon="🧹")
                 st.rerun()
             except Exception as ex:
@@ -1337,8 +1336,10 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
             except Exception as _de:
                 st.error(f"Diagnostic error: {_de}")
 
-        # Use a fresh connection + SQL-level filter (avoids shared-conn transaction state issues)
-        _ac = get_db_connection()
+        # Use a plain psycopg2 connection (no RealDictCursor) for pandas compatibility.
+        # pd.read_sql_query iterates cursor rows as sequences; RealDictCursor yields keys
+        # instead of values, which makes every cell show the column name as its value.
+        _ac = psycopg2.connect(DATABASE_URL)
         df_audit = pd.read_sql_query(
             """
             SELECT id, timestamp, username, action
