@@ -1227,10 +1227,12 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
         st.markdown("---")
         st.subheader("All Users")
 
+        _uc = psycopg2.connect(DATABASE_URL)
         df_users = pd.read_sql_query(
             "SELECT username, role, is_active FROM users WHERE username IS NOT NULL AND username != '' AND username <> 'username' AND role <> 'role'",
-            conn
+            _uc
         )
+        _uc.close()
 
         for row_idx, u_row in df_users.iterrows():
             badge = "🟢 Active" if u_row['is_active'] == 1 else "🔴 Deactivated"
