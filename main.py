@@ -178,8 +178,8 @@ def init_db():
             cursor.execute("INSERT INTO users VALUES ('McDonald', %s, 'Admin', 1)", (hash_password(admin_pass),))
             cursor.execute("INSERT INTO users VALUES ('StaffUser', %s, 'General', 1)", (hash_password(staff_pass),))
             cursor.execute(
-                "INSERT INTO audit_log (timestamp, username, action) VALUES (%s, 'System', 'Database initialised.')",
-                (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),)
+                "INSERT INTO audit_log (id, timestamp, username, action) VALUES (%s, %s, 'System', 'Database initialised.')",
+                (str(uuid.uuid4()), datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
             )
 
         conn.commit()
@@ -198,7 +198,12 @@ def log_action(user: str, action: str):
         conn = get_db_connection()
         cursor = conn.cursor()
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        cursor.execute("INSERT INTO audit_log (timestamp, username, action) VALUES (%s, %s, %s)", (timestamp, user, action))
+        # Provide id as UUID string — works whether the column is TEXT or SERIAL
+        entry_id = str(uuid.uuid4())
+        cursor.execute(
+            "INSERT INTO audit_log (id, timestamp, username, action) VALUES (%s, %s, %s, %s)",
+            (entry_id, timestamp, user, action)
+        )
         conn.commit()
         conn.close()
     except Exception as e:
@@ -1288,7 +1293,9 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                 deleted = _pcur.rowcount
                 _pc.commit()
                 _pc.close()
-                st.success(f"✅ Purged {deleted} ghost row(s) from the database.")
+                st.session_state["main_nav"] = "🛡️ Admin Panel"
+                st.toast(f"✅ Purged {deleted} ghost row(s).", icon="🧹")
+                st.rerun()
             except Exception as ex:
                 st.error(f"Purge failed: {ex}")
 
