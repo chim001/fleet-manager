@@ -180,6 +180,7 @@ def init_db():
                OR action = 'action'
                OR timestamp = 'timestamp'
                OR (username IS NULL AND action IS NULL)
+               OR action LIKE '%''username''%'
         """)
         cursor.execute("""
             DELETE FROM users
@@ -1305,6 +1306,7 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                        OR timestamp = 'timestamp'
                        OR username IS NULL
                        OR action IS NULL
+                       OR action LIKE '%''username''%'
                 """)
                 deleted = _pcur.rowcount
                 _pc.commit()
@@ -1349,6 +1351,7 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
               AND action IS NOT NULL
               AND action NOT IN ('action', '')
               AND timestamp NOT IN ('timestamp', '')
+              AND action NOT LIKE '%''username''%'
             ORDER BY id DESC
             """,
             _ac
