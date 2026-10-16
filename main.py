@@ -139,6 +139,24 @@ def init_db():
             )
         ''')
 
+        # If the audit_log id column is TEXT (old broken schema), drop and recreate it.
+        # This wipes ghost rows permanently and gives us a proper SERIAL id.
+        cursor.execute("""
+            SELECT data_type FROM information_schema.columns
+            WHERE table_name = 'audit_log' AND column_name = 'id'
+        """)
+        _id_type_row = cursor.fetchone()
+        if _id_type_row and _id_type_row["data_type"] not in ("integer", "bigint"):
+            cursor.execute("DROP TABLE audit_log")
+            cursor.execute("""
+                CREATE TABLE audit_log (
+                    id SERIAL PRIMARY KEY,
+                    timestamp TEXT,
+                    username TEXT,
+                    action TEXT
+                )
+            """)
+
         # Migration safety: add columns if missing
         for col_check in [
             ("users", "is_active", "ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"),
@@ -178,8 +196,8 @@ def init_db():
             cursor.execute("INSERT INTO users VALUES ('McDonald', %s, 'Admin', 1)", (hash_password(admin_pass),))
             cursor.execute("INSERT INTO users VALUES ('StaffUser', %s, 'General', 1)", (hash_password(staff_pass),))
             cursor.execute(
-                "INSERT INTO audit_log (id, timestamp, username, action) VALUES (%s, %s, 'System', 'Database initialised.')",
-                (str(uuid.uuid4()), datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                "INSERT INTO audit_log (timestamp, username, action) VALUES (%s, 'System', 'Database initialised.')",
+                (datetime.now().strftime("%Y-%m-%d %H:%M:%S"),)
             )
 
         conn.commit()
@@ -198,11 +216,9 @@ def log_action(user: str, action: str):
         conn = get_db_connection()
         cursor = conn.cursor()
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        # Provide id as UUID string — works whether the column is TEXT or SERIAL
-        entry_id = str(uuid.uuid4())
         cursor.execute(
-            "INSERT INTO audit_log (id, timestamp, username, action) VALUES (%s, %s, %s, %s)",
-            (entry_id, timestamp, user, action)
+            "INSERT INTO audit_log (timestamp, username, action) VALUES (%s, %s, %s)",
+            (timestamp, user, action)
         )
         conn.commit()
         conn.close()
@@ -1298,6 +1314,28 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                 st.rerun()
             except Exception as ex:
                 st.error(f"Purge failed: {ex}")
+
+        # Diagnostic: show raw table info
+        with st.expander("🔍 DB Diagnostic (click to expand)", expanded=False):
+            try:
+                _dc = get_db_connection()
+                _dcur = _dc.cursor()
+                _dcur.execute("SELECT COUNT(*) as total FROM audit_log")
+                _total = _dcur.fetchone()["total"]
+                _dcur.execute("""
+                    SELECT data_type FROM information_schema.columns
+                    WHERE table_name='audit_log' AND column_name='id'
+                """)
+                _dt = _dcur.fetchone()
+                _dcur.execute("SELECT id, timestamp, username, action FROM audit_log LIMIT 5")
+                _sample = _dcur.fetchall()
+                _dc.close()
+                st.write(f"**Total rows in DB:** {_total}")
+                st.write(f"**id column type:** {_dt['data_type'] if _dt else 'unknown'}")
+                st.write("**First 5 raw rows:**")
+                st.write([dict(r) for r in _sample])
+            except Exception as _de:
+                st.error(f"Diagnostic error: {_de}")
 
         # Load all rows then filter ghost entries in Python (immune to SQL transaction isolation)
         df_audit_raw = pd.read_sql_query("SELECT * FROM audit_log ORDER BY id DESC", conn)
