@@ -1337,17 +1337,23 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
             except Exception as _de:
                 st.error(f"Diagnostic error: {_de}")
 
-        # Load all rows then filter ghost entries in Python (immune to SQL transaction isolation)
-        df_audit_raw = pd.read_sql_query("SELECT * FROM audit_log ORDER BY id DESC", conn)
-        df_audit = df_audit_raw[
-            df_audit_raw['username'].notna() &
-            (df_audit_raw['username'].str.strip() != 'username') &
-            (df_audit_raw['username'].str.strip() != '') &
-            df_audit_raw['action'].notna() &
-            (df_audit_raw['action'].str.strip() != 'action') &
-            (df_audit_raw['action'].str.strip() != '')
-        ].reset_index(drop=True)
-        st.caption(f"Showing {len(df_audit)} real entries (filtered {len(df_audit_raw) - len(df_audit)} ghost rows)")
+        # Use a fresh connection + SQL-level filter (avoids shared-conn transaction state issues)
+        _ac = get_db_connection()
+        df_audit = pd.read_sql_query(
+            """
+            SELECT id, timestamp, username, action
+            FROM audit_log
+            WHERE username IS NOT NULL
+              AND username NOT IN ('username', '')
+              AND action IS NOT NULL
+              AND action NOT IN ('action', '')
+              AND timestamp NOT IN ('timestamp', '')
+            ORDER BY id DESC
+            """,
+            _ac
+        )
+        _ac.close()
+        st.caption(f"Showing {len(df_audit)} log entries")
         st.dataframe(df_audit, use_container_width=True)
 
     conn.close()
