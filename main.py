@@ -1188,7 +1188,10 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
         st.markdown("---")
         st.subheader("All Users")
 
-        df_users = pd.read_sql_query("SELECT username, role, is_active FROM users WHERE username IS NOT NULL AND username != ''", conn)
+        df_users = pd.read_sql_query(
+            "SELECT username, role, is_active FROM users WHERE username IS NOT NULL AND username != '' AND username <> 'username' AND role <> 'role'",
+            conn
+        )
 
         for row_idx, u_row in df_users.iterrows():
             badge = "🟢 Active" if u_row['is_active'] == 1 else "🔴 Deactivated"
@@ -1251,7 +1254,10 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
 
     with tab_audit:
         st.subheader("System Access Log Ledgers")
-        df_audit = pd.read_sql_query("SELECT * FROM audit_log ORDER BY id DESC", conn)
+        df_audit = pd.read_sql_query(
+            "SELECT * FROM audit_log WHERE username <> 'username' AND action <> 'action' AND (timestamp IS NULL OR timestamp <> 'timestamp') ORDER BY id DESC",
+            conn
+        )
         st.dataframe(df_audit, use_container_width=True)
 
     conn.close()
