@@ -1250,6 +1250,14 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
     tab_roles, tab_audit = st.tabs(["👥 User Security Directory", "📜 System Security Audit Log"])
 
     with tab_roles:
+        # --- flash messages (survive rerun via session_state) ---
+        if "admin_user_msg" in st.session_state:
+            st.success(st.session_state.admin_user_msg)
+            del st.session_state.admin_user_msg
+        if "admin_user_err" in st.session_state:
+            st.error(st.session_state.admin_user_err)
+            del st.session_state.admin_user_err
+
         st.subheader("Create New User Account")
         with st.form("add_user"):
             new_username  = st.text_input("Username:")
@@ -1268,10 +1276,11 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                             write_conn.commit()
                             write_conn.close()
                             log_action(st.session_state.user, f"Created user '{new_username}'.")
-                            st.success(f"User '{new_username}' created.")
+                            st.session_state.admin_user_msg = f"✅ User account **'{new_username}'** created successfully with role **{assigned_role}**."
                             st.rerun()
                         except Exception as e:
-                            st.error(f"Username '{new_username}' may already exist: {e}")
+                            st.session_state.admin_user_err = f"❌ Could not create user — username **'{new_username}'** may already exist."
+                            st.rerun()
                 else:
                     st.error("Username and password are required.")
 
@@ -1302,7 +1311,7 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                         write_conn.commit()
                         write_conn.close()
                         log_action(st.session_state.user, f"Changed role of '{u_row['username']}' to {new_role}.")
-                        st.success("Role updated.")
+                        st.session_state.admin_user_msg = f"✅ Role for **{u_row['username']}** updated to **{new_role}**."
                         st.rerun()
                     else:
                         st.info("No change — role is already set to that value.")
@@ -1318,9 +1327,11 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                         write_conn.commit()
                         write_conn.close()
                         log_action(st.session_state.user, f"Reset password for '{u_row['username']}'.")
-                        st.success(f"Password updated for [{u_row['username']}].")
                         if is_self:
                             trigger_logout()
+                        else:
+                            st.session_state.admin_user_msg = f"🔑 Password for **{u_row['username']}** has been reset."
+                            st.rerun()
 
                 col_d.markdown("<br>", unsafe_allow_html=True)
                 if u_row['is_active'] == 1:
@@ -1331,7 +1342,7 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                         write_conn.commit()
                         write_conn.close()
                         log_action(st.session_state.user, f"Deactivated '{u_row['username']}'.")
-                        st.warning(f"Account '{u_row['username']}' deactivated.")
+                        st.session_state.admin_user_msg = f"🛑 Account **{u_row['username']}** has been deactivated."
                         st.rerun()
                 else:
                     if col_d.button("✅ Reactivate", key=f"btn_react_{row_idx}_{u_row['username']}"):
@@ -1341,7 +1352,7 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                         write_conn.commit()
                         write_conn.close()
                         log_action(st.session_state.user, f"Reactivated '{u_row['username']}'.")
-                        st.success(f"Account '{u_row['username']}' reactivated.")
+                        st.session_state.admin_user_msg = f"✅ Account **{u_row['username']}** has been reactivated."
                         st.rerun()
 
     with tab_audit:
