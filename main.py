@@ -505,10 +505,12 @@ if menu == "📊 Reports":
     conn = get_db_connection()
     st.title("📊 Fleet Control Room & Reporting Engine")
 
-    df_vehicles_raw  = pd.read_sql_query("SELECT reg_number, model, vehicle_type FROM vehicles", conn)
-    df_hires_raw     = pd.read_sql_query("SELECT * FROM hires", conn)
-    df_expenses_raw  = pd.read_sql_query("SELECT * FROM expenses", conn)
-    df_admin_exp_raw = pd.read_sql_query("SELECT * FROM admin_expenses", conn)
+    _pc = psycopg2.connect(DATABASE_URL)
+    df_vehicles_raw  = pd.read_sql_query("SELECT reg_number, model, vehicle_type FROM vehicles", _pc)
+    df_hires_raw     = pd.read_sql_query("SELECT * FROM hires", _pc)
+    df_expenses_raw  = pd.read_sql_query("SELECT * FROM expenses", _pc)
+    df_admin_exp_raw = pd.read_sql_query("SELECT * FROM admin_expenses", _pc)
+    _pc.close()
 
     is_admin = st.session_state.role == "Admin"
 
@@ -900,7 +902,9 @@ elif menu == "📝 New Rental":
     st.title("📝 New Walk-In Booking Desk")
 
     is_admin_nr = st.session_state.role == "Admin"
-    db_vehicles_all = pd.read_sql_query("SELECT reg_number, model, vehicle_type FROM vehicles WHERE status = 'Available'", conn)
+    _pc2 = psycopg2.connect(DATABASE_URL)
+    db_vehicles_all = pd.read_sql_query("SELECT reg_number, model, vehicle_type FROM vehicles WHERE status = 'Available'", _pc2)
+    _pc2.close()
 
     if is_admin_nr:
         db_vehicles = db_vehicles_all
@@ -1015,7 +1019,9 @@ elif menu == "🔧 Maintenance":
 
     with tab_vehicle:
         st.subheader("Log Vehicle Maintenance Expense")
-        db_vehicles_all = pd.read_sql_query("SELECT reg_number, model, vehicle_type, status FROM vehicles", conn)
+        _pc3 = psycopg2.connect(DATABASE_URL)
+        db_vehicles_all = pd.read_sql_query("SELECT reg_number, model, vehicle_type, status FROM vehicles", _pc3)
+        _pc3.close()
 
         if is_admin_maint:
             db_vehicles = db_vehicles_all
@@ -1113,7 +1119,9 @@ elif menu == "🔧 Maintenance":
 
             st.markdown("---")
             st.subheader("📋 Admin Cost Ledger")
-            df_admin_exp = pd.read_sql_query("SELECT id, date, category, description, cost, logged_by FROM admin_expenses ORDER BY date DESC, id DESC", conn)
+            _pc4 = psycopg2.connect(DATABASE_URL)
+            df_admin_exp = pd.read_sql_query("SELECT id, date, category, description, cost, logged_by FROM admin_expenses ORDER BY date DESC, id DESC", _pc4)
+            _pc4.close()
 
             if df_admin_exp.empty:
                 st.info("No admin costs logged yet.")
@@ -1178,7 +1186,9 @@ elif menu == "🚘 Fleet Registry" and st.session_state.role == "Admin":
 
     st.markdown("---")
     st.subheader("📋 Core Infrastructure Asset Register")
-    df_veh = pd.read_sql_query('SELECT reg_number AS "Asset Code", vehicle_type AS "Classification Type", model AS "Model Details", color AS "Color Scheme", status AS "Operational Yard Status" FROM vehicles', conn)
+    _pc5 = psycopg2.connect(DATABASE_URL)
+    df_veh = pd.read_sql_query('SELECT reg_number AS "Asset Code", vehicle_type AS "Classification Type", model AS "Model Details", color AS "Color Scheme", status AS "Operational Yard Status" FROM vehicles', _pc5)
+    _pc5.close()
     st.dataframe(df_veh, use_container_width=True)
 
     conn.close()
