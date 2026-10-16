@@ -1274,14 +1274,23 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
 
         # One-click purge button for ghost rows (runs a direct DELETE on a fresh connection)
         if st.button("🧹 Purge Ghost Rows", key="btn_purge_ghost"):
-            _pc = get_db_connection()
-            _pcur = _pc.cursor()
-            _pcur.execute("DELETE FROM audit_log WHERE username = 'username' OR action = 'action' OR timestamp = 'timestamp' OR username IS NULL OR action IS NULL")
-            deleted = _pcur.rowcount
-            _pc.commit()
-            _pc.close()
-            st.success(f"Purged {deleted} ghost row(s). Reloading…")
-            st.rerun()
+            try:
+                _pc = get_db_connection()
+                _pcur = _pc.cursor()
+                _pcur.execute("""
+                    DELETE FROM audit_log
+                    WHERE username = 'username'
+                       OR action   = 'action'
+                       OR timestamp = 'timestamp'
+                       OR username IS NULL
+                       OR action IS NULL
+                """)
+                deleted = _pcur.rowcount
+                _pc.commit()
+                _pc.close()
+                st.success(f"✅ Purged {deleted} ghost row(s) from the database.")
+            except Exception as ex:
+                st.error(f"Purge failed: {ex}")
 
         # Load all rows then filter ghost entries in Python (immune to SQL transaction isolation)
         df_audit_raw = pd.read_sql_query("SELECT * FROM audit_log ORDER BY id DESC", conn)
