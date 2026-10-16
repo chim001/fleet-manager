@@ -1193,15 +1193,18 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
                 role_options = ["General","Admin"]
                 current_role = u_row["role"] if u_row["role"] in role_options else "General"
                 new_role = col_r.selectbox("Role:", role_options, index=role_options.index(current_role), key=f"role_sel_{u_row['username']}", disabled=is_self or u_row['is_active'] == 0)
-                if new_role != u_row["role"]:
-                    write_conn = get_db_connection()
-                    cursor = write_conn.cursor()
-                    cursor.execute("UPDATE users SET role = %s WHERE username = %s", (new_role, u_row["username"]))
-                    write_conn.commit()
-                    write_conn.close()
-                    log_action(st.session_state.user, f"Changed role of '{u_row['username']}' to {new_role}.")
-                    st.success("Role updated.")
-                    st.rerun()
+                if col_r.button("💾 Save Role", key=f"btn_role_{u_row['username']}", disabled=is_self or u_row['is_active'] == 0):
+                    if new_role != u_row["role"]:
+                        write_conn = get_db_connection()
+                        cursor = write_conn.cursor()
+                        cursor.execute("UPDATE users SET role = %s WHERE username = %s", (new_role, u_row["username"]))
+                        write_conn.commit()
+                        write_conn.close()
+                        log_action(st.session_state.user, f"Changed role of '{u_row['username']}' to {new_role}.")
+                        st.success("Role updated.")
+                        st.rerun()
+                    else:
+                        st.info("No change — role is already set to that value.")
 
                 new_pass_input = col_p.text_input("New Password (Admin Override):", type="password", key=f"pass_over_{u_row['username']}", disabled=u_row['is_active'] == 0)
                 if col_p.button("🔄 Reset Password", key=f"btn_reset_{u_row['username']}", disabled=u_row['is_active'] == 0):
