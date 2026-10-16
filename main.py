@@ -1253,6 +1253,12 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
 
     with tab_audit:
         st.subheader("System Access Log Ledgers")
+        # Remove ghost seed rows where column names were inserted as data
+        audit_cleanup_conn = get_db_connection()
+        audit_cursor = audit_cleanup_conn.cursor()
+        audit_cursor.execute("DELETE FROM audit_log WHERE username = 'username' OR action = 'action' OR timestamp = 'timestamp'")
+        audit_cleanup_conn.commit()
+        audit_cleanup_conn.close()
         df_audit = pd.read_sql_query("SELECT * FROM audit_log ORDER BY id DESC", conn)
         st.dataframe(df_audit, use_container_width=True)
 
