@@ -1294,50 +1294,6 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
     with tab_audit:
         st.subheader("System Access Log Ledgers")
 
-        # One-click purge button for ghost rows (runs a direct DELETE on a fresh connection)
-        if st.button("🧹 Purge Ghost Rows", key="btn_purge_ghost"):
-            try:
-                _pc = get_db_connection()
-                _pcur = _pc.cursor()
-                _pcur.execute("""
-                    DELETE FROM audit_log
-                    WHERE username = 'username'
-                       OR action   = 'action'
-                       OR timestamp = 'timestamp'
-                       OR username IS NULL
-                       OR action IS NULL
-                       OR action LIKE '%''username''%'
-                """)
-                deleted = _pcur.rowcount
-                _pc.commit()
-                _pc.close()
-                st.toast(f"✅ Purged {deleted} ghost row(s).", icon="🧹")
-                st.rerun()
-            except Exception as ex:
-                st.error(f"Purge failed: {ex}")
-
-        # Diagnostic: show raw table info
-        with st.expander("🔍 DB Diagnostic (click to expand)", expanded=False):
-            try:
-                _dc = get_db_connection()
-                _dcur = _dc.cursor()
-                _dcur.execute("SELECT COUNT(*) as total FROM audit_log")
-                _total = _dcur.fetchone()["total"]
-                _dcur.execute("""
-                    SELECT data_type FROM information_schema.columns
-                    WHERE table_name='audit_log' AND column_name='id'
-                """)
-                _dt = _dcur.fetchone()
-                _dcur.execute("SELECT id, timestamp, username, action FROM audit_log LIMIT 5")
-                _sample = _dcur.fetchall()
-                _dc.close()
-                st.write(f"**Total rows in DB:** {_total}")
-                st.write(f"**id column type:** {_dt['data_type'] if _dt else 'unknown'}")
-                st.write("**First 5 raw rows:**")
-                st.write([dict(r) for r in _sample])
-            except Exception as _de:
-                st.error(f"Diagnostic error: {_de}")
-
         # Use a plain psycopg2 connection (no RealDictCursor) for pandas compatibility.
         # pd.read_sql_query iterates cursor rows as sequences; RealDictCursor yields keys
         # instead of values, which makes every cell show the column name as its value.
