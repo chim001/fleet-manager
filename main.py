@@ -1151,6 +1151,11 @@ elif menu == "🚘 Fleet Registry" and st.session_state.role == "Admin":
 # =============================================================================
 elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
     conn = get_db_connection()
+    # Purge ghost seed rows on the same connection before any reads
+    _cur = conn.cursor()
+    _cur.execute("DELETE FROM users WHERE username = 'username' OR role = 'role'")
+    _cur.execute("DELETE FROM audit_log WHERE username = 'username' OR action = 'action' OR timestamp = 'timestamp'")
+    conn.commit()
     st.title("🛡️ Admin Configuration Dashboard")
     tab_roles, tab_audit = st.tabs(["👥 User Security Directory", "📜 System Security Audit Log"])
 
@@ -1182,13 +1187,6 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
 
         st.markdown("---")
         st.subheader("All Users")
-
-        # Clean up any ghost/seed rows that have literal 'username' or 'role' as values
-        cleanup_conn = get_db_connection()
-        cleanup_cursor = cleanup_conn.cursor()
-        cleanup_cursor.execute("DELETE FROM users WHERE username = 'username' OR role = 'role'")
-        cleanup_conn.commit()
-        cleanup_conn.close()
 
         df_users = pd.read_sql_query("SELECT username, role, is_active FROM users WHERE username IS NOT NULL AND username != ''", conn)
 
@@ -1253,12 +1251,6 @@ elif menu == "🛡️ Admin Panel" and st.session_state.role == "Admin":
 
     with tab_audit:
         st.subheader("System Access Log Ledgers")
-        # Remove ghost seed rows where column names were inserted as data
-        audit_cleanup_conn = get_db_connection()
-        audit_cursor = audit_cleanup_conn.cursor()
-        audit_cursor.execute("DELETE FROM audit_log WHERE username = 'username' OR action = 'action' OR timestamp = 'timestamp'")
-        audit_cleanup_conn.commit()
-        audit_cleanup_conn.close()
         df_audit = pd.read_sql_query("SELECT * FROM audit_log ORDER BY id DESC", conn)
         st.dataframe(df_audit, use_container_width=True)
 
